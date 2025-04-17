@@ -151,6 +151,14 @@ contract Raffle is VRFConsumerBaseV2Plus {
     function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
     }
+
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getPlayer(uint256 indexOfPlayer) external view returns (address) {
+        return s_players[indexOfPlayer];
+    }
 }
 
 // VRF SUBSCRIPTION ID 35933755213705372479578903805920411036630423621595249552454969071801038532194
