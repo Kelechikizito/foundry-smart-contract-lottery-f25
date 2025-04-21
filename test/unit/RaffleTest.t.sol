@@ -104,12 +104,6 @@ contract RaffleTest is Test {
         assert(!upkeepNeeded);
     }
 
-    function testCheckUpkeepReturnsFalseIfItHasNoPlayers() public {
-        // ARRANGE
-        // ACT
-        // ASSERT
-    }
-
     // Challenge to complete in Enugu
     // testCheckUpkeepReturnsFalseIfEnoughTimeHasPassed
     // testCheckUpkeepReturnsTrueWhenParametersAreGood
@@ -131,10 +125,6 @@ contract RaffleTest is Test {
         public
         raffleEntered
     {
-        // ARRANGE
-        // raffle.performUpkeep("");
-        // raffle.getNumberOfPlayers() > 0;
-
         // ACT
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
 
