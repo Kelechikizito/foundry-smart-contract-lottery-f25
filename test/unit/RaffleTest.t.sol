@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract RaffleTest is Test {
     Raffle public raffle;
@@ -69,12 +71,11 @@ contract RaffleTest is Test {
         raffle.enterRaffle{value: entranceFee}();
     }
 
-    function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
+    function testDontAllowPlayersToEnterWhileRaffleIsCalculating()
+        public
+        raffleEntered
+    {
         // ARRANGE
-        vm.prank(PLAYER);
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
         raffle.performUpkeep("");
 
         // ACT / ASSERT
@@ -93,15 +94,20 @@ contract RaffleTest is Test {
         assert(!upkeepNeeded);
     }
 
-    function testCheckUpkeepReturnsFalseIfRaffleIsNotOpen() public {
-        vm.prank(PLAYER);
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+    function testCheckUpkeepReturnsFalseIfRaffleIsNotOpen()
+        public
+        raffleEntered
+    {
         raffle.performUpkeep("");
 
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepReturnsFalseIfItHasNoPlayers() public {
+        // ARRANGE
+        // ACT
+        // ASSERT
     }
 
     // Challenge to complete in Enugu
@@ -109,13 +115,38 @@ contract RaffleTest is Test {
     // testCheckUpkeepReturnsTrueWhenParametersAreGood
     // AND MORE
 
-    //      PERFORMUPKEEP           //
-    function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue() public {
+    function testCheckUpkeepReturnsFalseIfEnoughTimeHasNotPassed() public {
+        // ARRANGE
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
 
+        // ACT
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+
+        // ASSERT
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpkeepReturnsTrueWhenParametersAreGood()
+        public
+        raffleEntered
+    {
+        // ARRANGE
+        // raffle.performUpkeep("");
+        // raffle.getNumberOfPlayers() > 0;
+
+        // ACT
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+
+        // ASSERT
+        assert(upkeepNeeded);
+    }
+
+    //      PERFORMUPKEEP           //
+    function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue()
+        public
+        raffleEntered
+    {
         raffle.performUpkeep("");
     }
 
@@ -139,4 +170,76 @@ contract RaffleTest is Test {
         );
         raffle.performUpkeep("");
     }
+
+    modifier raffleEntered() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        raffleEntered
+    {
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        assert(uint256(requestId) > 0);
+        assert(uint256(raffleState) == 1);
+    }
+
+    //  FULFILLRANDOMWORDS  //
+    function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(
+        uint256 randomRequestId
+    ) public raffleEntered {
+        vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
+            randomRequestId,
+            address(raffle)
+        );
+    }
+
+    // function testFulfillRandomWordsPicksAWinnerAndSendsMoney()
+    //     public
+    //     raffleEntered
+    // {
+    //     uint256 additionalEntrants = 3;
+    //     uint256 startingIndex = 1;
+    //     address expectedWinner = address(1);
+    //     for (
+    //         uint256 i = startingIndex;
+    //         i < (startingIndex + additionalEntrants);
+    //         i++
+    //     ) {
+    //         address newPlayer = address(uint160(i));
+    //         hoax(newPlayer, 1 ether);
+    //         raffle.enterRaffle{value: entranceFee}();
+    //     }
+    //     uint256 startingTimestamp = raffle.getLastTimeStamp();
+    //     uint256 winnerStartingBalance = expectedWinner.balance;
+
+    //     vm.recordLogs();
+    //     raffle.performUpkeep("");
+    //     Vm.Log[] memory entries = vm.getRecordedLogs();
+    //     bytes32 requestId = entries[1].topics[1];
+    //     VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
+    //         uint256(requestId),
+    //         address(raffle)
+    //     );
+
+    //     address recentWinner = raffle.getRecentWinner();
+    //     Raffle.RaffleState raffleState = raffle.getRaffleState();
+    //     uint256 winnerBalance = recentWinner.balance;
+    //     uint256 endingTimestamp = raffle.getLastTimeStamp();
+    //     uint256 prize = entranceFee * (additionalEntrants + 1);
+    //     assert(recentWinner == expectedWinner);
+    //     assert(uint256(raffleState) == 0);
+    //     assert(winnerBalance == winnerStartingBalance + prize);
+    //     assert(endingTimestamp > startingTimestamp);
+    // }
 }
