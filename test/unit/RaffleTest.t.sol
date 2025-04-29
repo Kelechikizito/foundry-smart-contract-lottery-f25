@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
@@ -41,34 +41,40 @@ contract RaffleTest is Test, CodeConstants {
     }
 
     function testRaffleInitializesInOpenState() public view {
-        assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        assert(raffleState == Raffle.RaffleState.OPEN); // 0 = OPEN state
     }
 
     function testRaffleRevertsWhenYouDontPayEnough() public {
         // ARRANGE
         vm.prank(PLAYER);
 
-        // ACT / ASSERT
+        // ACT/ASSERT
         vm.expectRevert(Raffle.Raffle__SendMoreToEnterRaffle.selector);
-        raffle.enterRaffle();
+        raffle.enterRaffle{value: 0}();
     }
 
     function testRaffleRecordsPlayersWhenTheyEnter() public {
+        // ACT
         vm.prank(PLAYER);
 
+        // ARRANGE
         raffle.enterRaffle{value: entranceFee}();
-
         address playerRecorded = raffle.getPlayer(0);
 
+        // ASSERT
         assert(playerRecorded == PLAYER);
     }
 
     function testEnteringRaffleEmitsEvent() public {
+        // ACT
         vm.prank(PLAYER);
 
+        // ARRANGE
         vm.expectEmit(true, false, false, false, address(raffle));
         emit RaffleEntered(PLAYER);
 
+        // ASSERT
         raffle.enterRaffle{value: entranceFee}();
     }
 
@@ -83,6 +89,11 @@ contract RaffleTest is Test, CodeConstants {
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
+    }
+
+    function testGetCorrectEntranceFee() public view {
+        uint256 entrantFee = raffle.getEntranceFee();
+        assert(entranceFee == entrantFee);
     }
 
     //      CHECKUPKEEP           //
