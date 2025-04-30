@@ -1,94 +1,51 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-// import {Test, console} from "forge-std/Test.sol";
-// import {Raffle} from "../../src/Raffle.sol";
-// import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
-// import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
-// import {CreateSubscription, AddConsumer, FundSubscription} from "../../script/Interactions.s.sol";
-// import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {Raffle} from "src/Raffle.sol";
+import {DeployRaffle} from "script/DeployRaffle.s.sol";
+import {CreateSubscription, FundSubscription, AddConsumer} from "script/Interactions.s.sol";
+import {HelperConfig} from "script/HelperConfig.s.sol";
+import {CodeConstants} from "../../script/HelperConfig.s.sol";
 
-// contract Interactions is Test {
-//     Raffle raffle;
-//     HelperConfig public helperConfig;
+// import {Script} from "lib/forge-std/src/Script.sol";
+// import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
+// import {HelperConfig} from "script/HelperConfig.s.sol";
 
-//     address PLAYER_ONE = makeAddr("playerOne");
-//     address PLAYER_TWO = makeAddr("playerTwo");
-//     address PLAYER_THREE = makeAddr("playerThree");
-//     address PLAYER_FOUR = makeAddr("playerFour");
-//     uint256 constant STARTING_BALANCE = 10 ether;
+contract EnterRaffleIntegration is Test, CodeConstants {
+    Raffle public raffle;
+    HelperConfig public helperConfig;
 
-//     function setUp() external {
-//         DeployRaffle deploy = new DeployRaffle();
-//         (raffle, helperConfig) = deploy.run();
-//         vm.deal(PLAYER_ONE, STARTING_BALANCE);
-//         vm.deal(PLAYER_TWO, STARTING_BALANCE);
-//         vm.deal(PLAYER_THREE, STARTING_BALANCE);
-//         vm.deal(PLAYER_FOUR, STARTING_BALANCE);
-//     }
+    uint256 entranceFee;
+    uint256 interval;
+    address vrfCoordinator;
+    bytes32 gasLane;
+    uint32 callbackGasLimit;
+    uint256 subscriptionId;
 
-//     function testRaffleFlow() public {
-//         // Arrange: Set up the subscription and add raffle as consumer
-//         CreateSubscription createSub = new CreateSubscription();
-//         createSub.createSubscriptionUsingConfig();
+    address public PLAYER = makeAddr("player");
+    uint256 public constant STARTING_PLAYER_BALANCE = 10 ether;
 
-//         FundSubscription fundSub = new FundSubscription();
-//         fundSub.fundSubscriptonUsingConfig();
+    event RaffleEntered(address indexed player);
+    event WinnerPicked(address indexed winner);
 
-//         AddConsumer addConsumer = new AddConsumer();
-//         addConsumer.addConsumerUsingConfig(address(raffle));
+    function setUp() external {
+        DeployRaffle deployer = new DeployRaffle();
+        (raffle, helperConfig) = deployer.deployContract();
+        HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
+        entranceFee = config.entranceFee;
+        interval = config.interval;
+        vrfCoordinator = config.vrfCoordinator;
+        gasLane = config.gasLane;
+        callbackGasLimit = config.callbackGasLimit;
+        subscriptionId = config.subscriptionId;
 
-//         // Act: Players enter the raffle
-//         uint256 entranceFee = raffle.getEntranceFee();
-//         vm.startPrank(PLAYER_ONE);
-//         raffle.enterRaffle{value: entranceFee}();
-//         vm.stopPrank();
+        vm.deal(PLAYER, STARTING_PLAYER_BALANCE);
+    }
 
-//         vm.startPrank(PLAYER_TWO);
-//         raffle.enterRaffle{value: entranceFee}();
-//         vm.stopPrank();
-
-//         vm.startPrank(PLAYER_THREE);
-//         raffle.enterRaffle{value: entranceFee}();
-//         vm.stopPrank();
-
-//         vm.startPrank(PLAYER_FOUR);
-//         raffle.enterRaffle{value: entranceFee}();
-//         vm.stopPrank();
-
-//         // Assert: Check players are added
-//         assertEq(raffle.getNumberOfPlayers(), 4);
-
-//         // Act: Fast-forward time to trigger upkeep
-//         uint256 interval = helperConfig.getConfig().interval;
-//         vm.warp(block.timestamp + interval + 1);
-//         vm.roll(block.number + 1);
-
-//         // Act: Perform upkeep to request random number
-//         raffle.performUpkeep("");
-
-//         // Act: Simulate Chainlink VRF response
-//         VRFCoordinatorV2_5Mock vrfCoordinatorMock = VRFCoordinatorV2_5Mock(
-//             helperConfig.getConfig().vrfCoordinator
-//         );
-//         uint256 requestId = 1; // Simplified for mock
-//         uint256[] memory randomWords = new uint256[](1);
-//         randomWords[0] = 12345; // Mock random number
-//         vm.startPrank(address(vrfCoordinatorMock));
-//         vrfCoordinatorMock.fulfillRandomWords(requestId, address(raffle));
-//         vm.stopPrank();
-
-//         // Assert: Verify raffle state and winner
-//         assertEq(
-//             uint256(raffle.getRaffleState()),
-//             uint256(Raffle.RaffleState.OPEN)
-//         );
-//         assertEq(raffle.getNumberOfPlayers(), 0);
-//         assert(raffle.getRecentWinner() != address(0));
-
-//         // Assert: Verify winner received funds
-//         address winner = raffle.getRecentWinner();
-//         uint256 winnerBalance = winner.balance;
-//         assertGt(winnerBalance, STARTING_BALANCE - entranceFee);
-//     }
-// }
+    function testUserCanEnterRaffle() public {
+        // ARRANGE
+        // ACT
+        // ASSERT
+    }
+}

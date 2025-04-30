@@ -97,12 +97,15 @@ contract RaffleTest is Test, CodeConstants {
     }
 
     //      CHECKUPKEEP           //
+
     function testCheckUpkeepReturnsFalseIfItHasNoBalance() public {
+        // ARRANGE
+        vm.prank(PLAYER);
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
 
+        // ACT / ASSERT
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
-
         assert(!upkeepNeeded);
     }
 
@@ -110,8 +113,10 @@ contract RaffleTest is Test, CodeConstants {
         public
         raffleEntered
     {
+        // ACT
         raffle.performUpkeep("");
 
+        // ASSERT
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(!upkeepNeeded);
     }
@@ -120,11 +125,10 @@ contract RaffleTest is Test, CodeConstants {
         // ARRANGE
         vm.prank(PLAYER);
         raffle.enterRaffle{value: entranceFee}();
+        vm.roll(block.number + 1);
 
-        // ACT
+        // ACT / ASSERT
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
-
-        // ASSERT
         assert(!upkeepNeeded);
     }
 
@@ -132,10 +136,8 @@ contract RaffleTest is Test, CodeConstants {
         public
         raffleEntered
     {
-        // ACT
+        // ACT / ASSERT
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
-
-        // ASSERT
         assert(upkeepNeeded);
     }
 
@@ -148,6 +150,7 @@ contract RaffleTest is Test, CodeConstants {
     }
 
     function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
+        // ARRANGE
         uint256 currentBalance = 0;
         uint256 numPlayers = 0;
         Raffle.RaffleState rState = raffle.getRaffleState();
@@ -157,6 +160,7 @@ contract RaffleTest is Test, CodeConstants {
         currentBalance = currentBalance + entranceFee;
         numPlayers = 1;
 
+        // ACT / ASSERT
         vm.expectRevert(
             abi.encodeWithSelector(
                 Raffle.Raffle__UpkeepNotNeeded.selector,
