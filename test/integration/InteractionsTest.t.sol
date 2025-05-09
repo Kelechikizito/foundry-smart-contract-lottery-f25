@@ -4,17 +4,19 @@ pragma solidity 0.8.19;
 import {Test, console} from "forge-std/Test.sol";
 import {Raffle} from "src/Raffle.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
-import {CreateSubscription, FundSubscription, AddConsumer} from "script/Interactions.s.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
-import {CodeConstants} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {CreateSubscription, FundSubscription, AddConsumer} from "script/Interactions.s.sol";
+import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
+import {VRFCoordinatorV2_5Mock} from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
+import {LinkToken} from "test/mocks/LinkToken.sol";
 
-// import {Script} from "lib/forge-std/src/Script.sol";
-// import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
-// import {HelperConfig} from "script/HelperConfig.s.sol";
-
-contract EnterRaffleIntegration is Test, CodeConstants {
-    Raffle public raffle;
-    HelperConfig public helperConfig;
+contract InteractionsTest is Test {
+    Raffle raffle;
+    HelperConfig helperConfig;
+    CreateSubscription createSubscription = new CreateSubscription();
+    FundSubscription fundSubscription = new FundSubscription();
+    AddConsumer addConsumer = new AddConsumer();
 
     uint256 entranceFee;
     uint256 interval;
@@ -43,9 +45,21 @@ contract EnterRaffleIntegration is Test, CodeConstants {
         vm.deal(PLAYER, STARTING_PLAYER_BALANCE);
     }
 
-    function testUserCanEnterRaffle() public {
+    function testCreateSubscription() public {
+        // ARRANGE / ACT
+        uint256 subId;
+        (subId, ) = createSubscription.createSubscriptionUsingConfig();
+
+        // ACT
+        assert(subId > 0);
+        console.log(subId);
+    }
+
+    function testFundSubscription() public {
         // ARRANGE
         // ACT
         // ASSERT
     }
+
+    function testAddConsumer() public {}
 }
